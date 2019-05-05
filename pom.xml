@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project
+    xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.dropwizard.modules</groupId>
+  <artifactId>dropwizard-health</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>11</source>
+          <target>11</target>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  <packaging>jar</packaging>
+
+  <name>Dropwizard Health</name>
+  <description>Provides a health check implementation that performs ongoing monitoring of an application's dependencies and includes
+    an endpoint that can be called by a load balancer to determine if the application is healthy and thus able to retrieve
+    traffic.</description>
+  <url>https://github.com/dropwizard/dropwizard-health</url>
+
+  <licenses>
+    <license>
+      <name>Apache 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <scm>
+    <developerConnection>scm:git:git@github.com:dropwizard/dropwizard-health.git</developerConnection>
+    <connection>scm:git:https://github.com/dropwizard/dropwizard-health.git</connection>
+    <url>https://github.com/dropwizard/dropwizard-health</url>
+    <tag>HEAD</tag>
+  </scm>
+
+  <ciManagement>
+    <system>Travis CI</system>
+    <url>https://travis-ci.org/dropwizard/dropwizard-health</url>
+  </ciManagement>
+
+  <issueManagement>
+    <system>GitHub Issues</system>
+    <url>https://github.com/dropwizard/dropwizard-health/issues</url>
+  </issueManagement>
+
+  <distributionManagement>
+    <snapshotRepository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+    </snapshotRepository>
+    <repository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    </repository>
+    <site>
+      <id>dropwizard-health</id>
+      <url>http://dropwizard.github.io/dropwizard-health/${project.version}</url>
+    </site>
+  </distributionManagement>
+
+  <developers>
+    <developer>
+      <id>mzamani1</id>
+      <name>Michael Zamani</name>
+      <email>mzamani@apple.com</email>
+    </developer>
+  </developers>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <dropwizard.version>1.3.10</dropwizard.version>
+    <wiremock.version>2.20.0</wiremock.version>
+    <awaitility.version>3.0.0</awaitility.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.dropwizard</groupId>
+        <artifactId>dropwizard-bom</artifactId>
+        <version>${dropwizard.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.dropwizard</groupId>
+      <artifactId>dropwizard-core</artifactId>
+    </dependency>
+
+    <!-- test dependencies -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.dropwizard</groupId>
+      <artifactId>dropwizard-testing</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <version>${awaitility.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.github.tomakehurst</groupId>
+      <artifactId>wiremock</artifactId>
+      <version>${wiremock.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+</project>
