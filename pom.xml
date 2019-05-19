@@ -9,18 +9,6 @@
   <groupId>io.dropwizard.modules</groupId>
   <artifactId>dropwizard-health</artifactId>
   <version>1.0.0-SNAPSHOT</version>
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>11</source>
-          <target>11</target>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
   <packaging>jar</packaging>
 
   <name>Dropwizard Health</name>
@@ -80,6 +68,11 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+    <maven.compiler.showWarnings>true</maven.compiler.showWarnings>
+    <maven.compiler.showDeprecation>true</maven.compiler.showDeprecation>
+
     <dropwizard.version>1.3.10</dropwizard.version>
     <wiremock.version>2.20.0</wiremock.version>
     <awaitility.version>3.0.0</awaitility.version>
