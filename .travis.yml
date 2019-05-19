@@ -15,14 +15,14 @@ deploy:
   - provider: script
     script: bash ci/deploy-snapshot.sh
     on:
-      repo: dropwizard/dropwizard
+      repo: dropwizard/dropwizard-health
       tags: false
       branch: master
       jdk: openjdk8
   - provider: script
     script: bash ci/deploy-release.sh
     on:
-      repo: dropwizard/dropwizard
+      repo: dropwizard/dropwizard-health
       tags: true
       jdk: openjdk8
 env:
