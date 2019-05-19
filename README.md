@@ -1,4 +1,6 @@
 # dropwizard-health
+[![Build Status](https://travis-ci.org/dropwizard/dropwizard-health.svg?branch=master)](https://travis-ci.org/dropwizard/dropwizard-health)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.dropwizard.modules/dropwizard-health/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.dropwizard.modules/dropwizard-health/)
 
 Provides a health check implementation that performs ongoing monitoring of an application's dependencies and includes
 an endpoint that can be called by a load balancer to determine if the application is healthy and thus able to receive
