@@ -4,14 +4,13 @@ import com.google.common.primitives.Longs;
 import io.dropwizard.testing.ConfigOverride;
 import io.dropwizard.testing.junit.DropwizardAppRule;
 import org.awaitility.Awaitility;
-import org.awaitility.Duration;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.time.Duration;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 import javax.ws.rs.client.Client;
 
@@ -28,8 +27,8 @@ public class HealthCheckIT {
     private static final String APP_PORT = "0";
     private static final String ENDPOINT = "/health-check";
     private static final String TEST_TIMEOUT_MS_OVERRIDE_ENV_VAR = "HEALTH_CHECK_TEST_TIMEOUT";
-    private static final Duration APP_STARTUP_MAX_TIMEOUT = Duration.ONE_MINUTE;
-    private static final Duration POLL_DELAY = new Duration(10, TimeUnit.MILLISECONDS);
+    private static final Duration APP_STARTUP_MAX_TIMEOUT = Duration.ofMinutes(1);
+    private static final Duration POLL_DELAY = Duration.ofMillis(10);
 
     @ClassRule
     public static final DropwizardAppRule<TestApplication.TestConfiguration> RULE =
@@ -44,9 +43,9 @@ public class HealthCheckIT {
     public static void setUpBeforeClass() {
         testTimeout = Optional.ofNullable(System.getenv(TEST_TIMEOUT_MS_OVERRIDE_ENV_VAR))
                 .map(Longs::tryParse)
-                .map(timeout -> new Duration(timeout, TimeUnit.MILLISECONDS))
+                .map(Duration::ofMillis)
                 // Default to 5 seconds
-                .orElse(Duration.FIVE_SECONDS);
+                .orElse(Duration.ofSeconds(5));
     }
 
     @Before
