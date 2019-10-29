@@ -3,8 +3,8 @@ package io.dropwizard.health.core;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -13,7 +13,7 @@ public class HealthCheckScheduler {
     private static final Logger log = LoggerFactory.getLogger(HealthCheckScheduler.class);
 
     private final ScheduledExecutorService executorService;
-    private final Map<String, ScheduledFuture> futures = new HashMap<>();
+    private final Map<String, ScheduledFuture> futures = new ConcurrentHashMap<>();
 
     public HealthCheckScheduler(final ScheduledExecutorService executorService) {
         this.executorService = executorService;
