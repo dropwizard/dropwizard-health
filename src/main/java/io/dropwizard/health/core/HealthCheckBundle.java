@@ -37,21 +37,30 @@ public abstract class HealthCheckBundle<C extends Configuration> implements Conf
         final HealthConfiguration healthConfig = getHealthConfiguration(configuration);
         final List<HealthCheckConfiguration> healthCheckConfigs = healthConfig.getHealthCheckConfigurations();
 
+        // setup schedules for configured health checks
         final ScheduledExecutorService scheduledHealthCheckExecutor = createScheduledExecutorForHealthChecks(
                 healthCheckConfigs.size(), metrics, environment.lifecycle());
-
         final HealthCheckScheduler scheduler = new HealthCheckScheduler(scheduledHealthCheckExecutor);
-
         final HealthCheckManager healthCheckManager = createHealthCheckManager(healthCheckConfigs, scheduler, metrics);
         healthCheckManager.initializeAppHealth();
 
+        // setup servlet to respond to health check requests
+        final HttpServlet servlet;
+        final HttpServlet userProvidedServlet = createHealthCheckServlet(healthCheckManager.getIsAppHealthy());
+        if (userProvidedServlet != null) {
+            servlet = userProvidedServlet;
+        } else {
+            servlet = healthConfig.getServletFactory().build(healthCheckManager.getIsAppHealthy());
+        }
         environment.servlets()
-                .addServlet("health-check", createHealthCheckServlet(healthCheckManager.getIsAppHealthy()))
+                .addServlet("health-check", servlet)
                 .addMapping(healthConfig.getHealthCheckUrlPaths().toArray(new String[0]));
 
+        // register listener for HealthCheckRegistry and setup validator to ensure correct config
         environment.healthChecks().addListener(healthCheckManager);
         environment.lifecycle().manage(new HealthCheckConfigValidator(healthCheckConfigs, environment.healthChecks()));
 
+        // register shutdown handler with Jetty
         final Duration shutdownWaitPeriod = healthConfig.getShutdownWaitPeriod();
         if (healthConfig.isDelayedShutdownHandlerEnabled() && shutdownWaitPeriod.toMilliseconds() > 0) {
             final DelayedShutdownHandler shutdownHandler = new DelayedShutdownHandler(
@@ -82,14 +91,16 @@ public abstract class HealthCheckBundle<C extends Configuration> implements Conf
 
     /**
      * Creates an {@link HttpServlet} to expose health check endpoint(s).
-     * By default this will return a {@link HealthCheckServlet} instance, but can be overridden if different
-     * behavior is desired.
+     *
+     * By default this will return null to indicate that the servlet factory should be used. If different behavior
+     * is desired, this class must be extended and an alternate implementation for this method should be provided
+     * that returns a non-null {@link HttpServlet}.
      *
      * @param isHealthy A boolean flag representing app health.
      * @return A created {@link HttpServlet} to expose health check endpoint(s).
      */
     protected HttpServlet createHealthCheckServlet(final AtomicBoolean isHealthy) {
-        return new HealthCheckServlet(isHealthy);
+        return null;
     }
 
     protected HealthCheckManager createHealthCheckManager(final List<HealthCheckConfiguration> healthCheckConfigs,

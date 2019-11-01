@@ -2,14 +2,16 @@ package io.dropwizard.health.conf;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
+import io.dropwizard.health.conf.response.DefaultHealthServletFactory;
+import io.dropwizard.health.conf.response.HealthServletFactory;
 import io.dropwizard.util.Duration;
-import org.hibernate.validator.constraints.NotEmpty;
 
 import java.util.Collections;
 import java.util.List;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 
 public class HealthConfiguration {
 
@@ -25,9 +27,14 @@ public class HealthConfiguration {
     @JsonProperty
     private Duration shutdownWaitPeriod = Duration.seconds(15);
 
-    @NotEmpty
+    @NotNull
+    @Size(min = 1)
     @JsonProperty
     private List<String> healthCheckUrlPaths = ImmutableList.of("/health-check");
+
+    @Valid
+    @JsonProperty("servlet")
+    private HealthServletFactory servletFactory = new DefaultHealthServletFactory();
 
     public List<HealthCheckConfiguration> getHealthCheckConfigurations() {
         return healthChecks;
@@ -59,5 +66,13 @@ public class HealthConfiguration {
 
     public void setHealthCheckUrlPaths(final List<String> healthCheckUrlPaths) {
         this.healthCheckUrlPaths = healthCheckUrlPaths;
+    }
+
+    public HealthServletFactory getServletFactory() {
+        return servletFactory;
+    }
+
+    public void setServletFactory(HealthServletFactory servletFactory) {
+        this.servletFactory = servletFactory;
     }
 }

@@ -1,14 +1,15 @@
 package io.dropwizard.health.conf;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.hibernate.validator.constraints.NotEmpty;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 
 public class HealthCheckConfiguration {
 
-    @NotEmpty
+    @NotNull
+    @Size(min = 1)
     @JsonProperty
     private String name;
 
