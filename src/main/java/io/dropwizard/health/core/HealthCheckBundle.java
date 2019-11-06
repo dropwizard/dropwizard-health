@@ -25,6 +25,15 @@ import javax.servlet.http.HttpServlet;
 
 public abstract class HealthCheckBundle<C extends Configuration> implements ConfiguredBundle<C> {
     private static final Logger log = LoggerFactory.getLogger(HealthCheckBundle.class);
+    private final String baseName;
+
+    public HealthCheckBundle() {
+        this("health-check");
+    }
+
+    protected HealthCheckBundle(String baseName) {
+        this.baseName = baseName;
+    }
 
     @Override
     public void initialize(final Bootstrap<?> bootstrap) {
@@ -53,7 +62,7 @@ public abstract class HealthCheckBundle<C extends Configuration> implements Conf
             servlet = healthConfig.getServletFactory().build(healthCheckManager.getIsAppHealthy());
         }
         environment.servlets()
-                .addServlet("health-check", servlet)
+                .addServlet(baseName + "-servlet", servlet)
                 .addMapping(healthConfig.getHealthCheckUrlPaths().toArray(new String[0]));
 
         // register listener for HealthCheckRegistry and setup validator to ensure correct config
@@ -73,7 +82,7 @@ public abstract class HealthCheckBundle<C extends Configuration> implements Conf
                                                                             final MetricRegistry metrics,
                                                                             final LifecycleEnvironment lifecycle) {
         final ThreadFactory threadFactory = new ThreadFactoryBuilder()
-                .setNameFormat("health-check-%d")
+                .setNameFormat(baseName + "-%d")
                 .setDaemon(true)
                 .setUncaughtExceptionHandler((t, e) -> log.error("Thread={} died due to uncaught exception", t, e))
                 .build();
@@ -82,7 +91,7 @@ public abstract class HealthCheckBundle<C extends Configuration> implements Conf
                 new InstrumentedThreadFactory(threadFactory, metrics);
 
         final ScheduledExecutorService scheduledExecutorService =
-                lifecycle.scheduledExecutorService("health-check-scheduled-executor", instrumentedThreadFactory)
+                lifecycle.scheduledExecutorService(baseName + "-scheduled-executor", instrumentedThreadFactory)
                         .threads(numberOfScheduledHealthChecks)
                         .build();
 
