@@ -365,5 +365,28 @@
         </plugins>
       </build>
     </profile>
+    <profile>
+      <id>dropwizard-major-version-2</id>
+      <activation>
+        <property>
+          <name>env.DROPWIZARD_MAJOR_VERSION</name>
+          <value>2</value>
+        </property>
+      </activation>
+      <properties>
+        <dropwizard.version>2.0.0-rc12</dropwizard.version>
+      </properties>
+      <dependencyManagement>
+        <dependencies>
+          <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-dependencies</artifactId>
+            <version>${dropwizard.version}</version>
+            <type>pom</type>
+            <scope>import</scope>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>
+    </profile>
   </profiles>
 </project>

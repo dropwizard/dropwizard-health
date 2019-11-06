@@ -7,12 +7,11 @@ Provides a health check implementation that performs ongoing monitoring of an ap
 an endpoint that can be called by a load balancer to determine if the application is healthy and thus able to receive
 traffic.
 
-##### Future improvements:
-* Hooks for health status change events.
-* Better support for Cloud-native live-ness and readiness checks.
-* The ability to expose health check data to other modules (for instance, an Admin page may want to show historical health check results).
-* More out-of-the-box generally useful health checks implementations, like file-system health checks.
- 
+## Dropwizard Version Support Matrix
+dropwizard-health | Dropwizard v1.3.x  | Dropwizard v2.0.x
+----------------- | ------------------ | ------------------
+v1.3.x            | :white_check_mark: | :white_check_mark:
+
 ## Usage
 Add dependency on library.
 ```xml
@@ -180,3 +179,9 @@ health:
     - name: UserComposite
       critical: true
 ```
+
+## Future improvements:
+* Hooks for health status change events.
+* Better support for Cloud-native liveness and readiness checks.
+* The ability to expose health check data to other modules (for instance, an Admin page may want to show historical health check results).
+* More out-of-the-box generally useful health checks implementations, like file-system health checks.
