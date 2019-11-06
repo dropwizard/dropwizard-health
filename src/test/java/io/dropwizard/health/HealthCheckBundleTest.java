@@ -85,7 +85,7 @@ public class HealthCheckBundleTest {
 
         final ServletRegistration.Dynamic servletRegistration = mock(ServletRegistration.Dynamic.class);
         when(servlets.addServlet(
-                eq("health-check"),
+                eq("health-check-servlet"),
                 any(HealthCheckServlet.class)))
                 .thenReturn(servletRegistration);
 
