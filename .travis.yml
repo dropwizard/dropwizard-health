@@ -1,3 +1,4 @@
+os: linux
 dist: xenial
 language: java
 jdk:
@@ -19,13 +20,18 @@ deploy:
       tags: false
       branch: master
       jdk: openjdk8
+      condition: $PUBLISH = true
   - provider: script
     script: bash ci/deploy-release.sh
     on:
       repo: dropwizard/dropwizard-health
       tags: true
       jdk: openjdk8
+      condition: $PUBLISH = true
 env:
   global:
     - secure: RPsipHHqg22GuRtj09bjq09RXyg9PvV2JeQKtPwafpT2DRQjMwQi4A5aeO8YW2J4lx0vBNScNkXvRvvqE7hVWahV3WFdbz6KT+uFtgTceoYpJp9J24mpYpv6f/K8LotqIP0uMloSZXzO97DT/yIzU0MqOzROqw7Ss1K4P0chde6HDDu7f4N7Og6BC8wyiJ4uhlwGoa27Xi59PooIw1zsEXjPhVpYgMCi3iF57i19gOverNhJ4SlaQtg+5/Ie91L7fBSn3hWdsi2bUCh3kM17HCCPOVJmO5fT48CcJzyNjGmA4i2EWub8dl7ssCHXbCRKyWywyo2vryKdjMxvOXUG46ISJgEo1S+2Z+lmOIbxklfPVzqc41UMe/kETXMs0JCKiJ8JAI6neEgSOCxB+jOByRa5zmEMNAkT/oNp0bllG0EawK46rG4shUkFy39n6rxDa360UYpFP2/Go0lMU0dodf41F5CW5FN9yLvgGl1Gv3ysRquLxO1rhqyQmFdcw7K7igvKGbhpluSRUHw5LD02yqJsyrNesWndVEz+9KjHvq++bk1SjDJZN2nQN/i/X+e5EMfXLxKIxAD7rwUPFz1Q2N+qLUJObL3TJPHlDiezYhzSnLvGWrI4gCwktBA6/TS3/7TRdTfK064XsTOw8FcTVUSTgbk/pK+mc51JyT6yhJQ=
     - secure: BjplEOJujhM6DQWIxsyEnnw473GXHEQfndDlHZnFXB3lU6NYvK6mDXWUANRjD4JL3knvxazxk/TKPgw2pblL1mY6zs2HCMzaa7xlNzuoasNsT0ZygprbipalSxxl8+O5S1efuiAtrLwLHatahBKDN+dB9WygSiNG8ZbU2NlfsExQ/Id9on0Zpa6o5OioxDcQFpgaF2IQNiCBi+YOX1gyVbwEd/fFpLDQaIimZmxZzKy4f/T6v06TUfaZJBagB+pjVTjIOxpOLE50yIX+EWHdAGURwptXnHGsjjBQUy0sg9oVN8MlobZA6Kw6mhvh+x6JnTuC/B4/netWQWzWimLnUsee4GgaBSgiBH4GaMseRWZ2ajMJLir872N9FhaIPnwjRTeKgSsQ+UPnWl98ZGywYEmUcy6adcZ9ccLFhb6dI6HESyOvxBIL0Zbvc7F8KActM3DxJTZDoiCketB1ETh2urYuJXQ8ZGhMaRZWVvJ/1cYa4sI9Y3dArn03aQEYjfe0QY1jfGayZOx4t2snDVyL/wV/JWAbP2HZt7LC+OYhY+OXJCjpPXdaRB/W2qNR6WQ0UJpB4p5RlcUFsYKc8a02cSbW+4J5MkJvTfV+PnPXkrQVeea0vE7Gh6RFnYluVkNxDq0u5FIy2JF0ak8VUiDOk+uFzwdzAw/QDBH0OyPSoTk=
+  jobs:
+    - DROPWIZARD_MAJOR_VERSION=1 PUBLISH=true
+    - DROPWIZARD_MAJOR_VERSION=2
