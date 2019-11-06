@@ -7,6 +7,9 @@ jdk:
 before_install:
   - rm ~/.m2/settings.xml || true
   - ulimit -c unlimited -S
+install: skip
+script:
+  - ./mvnw -V -B -ff verify
 after_success:
   - bash ci/after_success.sh
 cache:
