@@ -11,10 +11,10 @@ import com.codahale.metrics.health.HealthCheckRegistryListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -36,7 +36,7 @@ public class HealthCheckManager implements HealthCheckRegistryListener, StateCha
     public HealthCheckManager(final List<HealthCheckConfiguration> configs,
                               final HealthCheckScheduler scheduler,
                               final MetricRegistry metrics) {
-        this(configs, scheduler, metrics, new HashMap<>());
+        this(configs, scheduler, metrics, new ConcurrentHashMap<>());
     }
 
     // Visible for testing
