@@ -2,8 +2,12 @@ package io.dropwizard.health.test;
 
 import com.google.common.primitives.Longs;
 import io.dropwizard.testing.ConfigOverride;
+import io.dropwizard.testing.DropwizardTestSupport;
 import io.dropwizard.testing.junit.DropwizardAppRule;
 import org.awaitility.Awaitility;
+import org.glassfish.jersey.client.JerseyClientBuilder;
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -30,9 +34,8 @@ public class HealthCheckIT {
     private static final Duration APP_STARTUP_MAX_TIMEOUT = Duration.ofMinutes(1);
     private static final Duration POLL_DELAY = Duration.ofMillis(10);
 
-    @ClassRule
-    public static final DropwizardAppRule<TestApplication.TestConfiguration> RULE =
-            new DropwizardAppRule<>(TestApplication.class, CONFIG_PATH, ConfigOverride.config(APP_PORT_KEY, APP_PORT));
+    public static final DropwizardTestSupport<TestApplication.TestConfiguration> RULE =
+            new DropwizardTestSupport<>(TestApplication.class, CONFIG_PATH, ConfigOverride.config(APP_PORT_KEY, APP_PORT));
 
     private static Duration testTimeout;
 
@@ -40,7 +43,8 @@ public class HealthCheckIT {
     private String hostUrl = "http://" + HOST + ":" + RULE.getLocalPort();
 
     @BeforeClass
-    public static void setUpBeforeClass() {
+    public static void setUpBeforeClass() throws Exception {
+        RULE.before();
         testTimeout = Optional.ofNullable(System.getenv(TEST_TIMEOUT_MS_OVERRIDE_ENV_VAR))
                 .map(Longs::tryParse)
                 .map(Duration::ofMillis)
@@ -48,9 +52,14 @@ public class HealthCheckIT {
                 .orElse(Duration.ofSeconds(5));
     }
 
+    @AfterClass
+    public static void afterClass() throws Exception {
+        RULE.after();
+    }
+
     @Before
     public void setUp() {
-        this.client = RULE.client();
+        this.client = new JerseyClientBuilder().build();
         final TestApplication app = RULE.getApplication();
         app.getCriticalCheckHealthy1().set(true);
         app.getCriticalCheckHealthy2().set(true);
@@ -59,6 +68,11 @@ public class HealthCheckIT {
                 .pollInSameThread()
                 .pollDelay(POLL_DELAY)
                 .until(this::isAppHealthy);
+    }
+
+    @After
+    public void tearDown() {
+        this.client.close();
     }
 
     @Test
