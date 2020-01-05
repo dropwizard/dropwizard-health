@@ -12,6 +12,8 @@ dropwizard-health | Dropwizard v1.3.x  | Dropwizard v2.0.x
 ----------------- | ------------------ | ------------------
 v1.3.x            | :white_check_mark: | :white_check_mark:
 v1.4.x            | :white_check_mark: | :white_check_mark:
+v1.5.x            | :white_check_mark: | :white_check_mark:
+
 
 ## Usage
 Add dependency on library.
