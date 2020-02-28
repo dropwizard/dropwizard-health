@@ -76,7 +76,7 @@
     <maven.compiler.showDeprecation>true</maven.compiler.showDeprecation>
 
     <dropwizard.version>2.0.0</dropwizard.version>
-    <wiremock.version>2.25.1</wiremock.version>
+    <wiremock.version>2.26.1</wiremock.version>
     <awaitility.version>4.0.2</awaitility.version>
   </properties>
 
