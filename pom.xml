@@ -77,7 +77,7 @@
 
     <dropwizard.version>2.0.9</dropwizard.version>
     <wiremock.version>2.26.3</wiremock.version>
-    <awaitility.version>4.0.2</awaitility.version>
+    <awaitility.version>4.0.3</awaitility.version>
   </properties>
 
   <dependencyManagement>
