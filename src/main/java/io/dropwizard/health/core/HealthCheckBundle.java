@@ -25,14 +25,20 @@ import javax.servlet.http.HttpServlet;
 
 public abstract class HealthCheckBundle<C extends Configuration> implements ConfiguredBundle<C> {
     private static final Logger log = LoggerFactory.getLogger(HealthCheckBundle.class);
-    private final String baseName;
+    private final String name;
 
     public HealthCheckBundle() {
-        this("health-check");
+        this(null);
     }
 
-    protected HealthCheckBundle(String baseName) {
-        this.baseName = baseName;
+    public HealthCheckBundle(String name) {
+        final String baseName = "health-check";
+        if (name != null) {
+            this.name = baseName + "-" + name;
+        } else {
+            this.name = baseName;
+        }
+
     }
 
     @Override
@@ -50,7 +56,7 @@ public abstract class HealthCheckBundle<C extends Configuration> implements Conf
         final ScheduledExecutorService scheduledHealthCheckExecutor = createScheduledExecutorForHealthChecks(
                 healthCheckConfigs.size(), metrics, environment.lifecycle());
         final HealthCheckScheduler scheduler = new HealthCheckScheduler(scheduledHealthCheckExecutor);
-        final HealthCheckManager healthCheckManager = createHealthCheckManager(healthCheckConfigs, scheduler, metrics);
+        final HealthCheckManager healthCheckManager = createHealthCheckManager(healthCheckConfigs, scheduler, metrics, name);
         healthCheckManager.initializeAppHealth();
 
         // setup servlet to respond to health check requests
@@ -61,8 +67,9 @@ public abstract class HealthCheckBundle<C extends Configuration> implements Conf
         } else {
             servlet = healthConfig.getServletFactory().build(healthCheckManager.getIsAppHealthy());
         }
+
         environment.servlets()
-                .addServlet(baseName + "-servlet", servlet)
+                .addServlet(name, servlet)
                 .addMapping(healthConfig.getHealthCheckUrlPaths().toArray(new String[0]));
 
         // register listener for HealthCheckRegistry and setup validator to ensure correct config
@@ -82,7 +89,7 @@ public abstract class HealthCheckBundle<C extends Configuration> implements Conf
                                                                             final MetricRegistry metrics,
                                                                             final LifecycleEnvironment lifecycle) {
         final ThreadFactory threadFactory = new ThreadFactoryBuilder()
-                .setNameFormat(baseName + "-%d")
+                .setNameFormat(name + "-%d")
                 .setDaemon(true)
                 .setUncaughtExceptionHandler((t, e) -> log.error("Thread={} died due to uncaught exception", t, e))
                 .build();
@@ -91,7 +98,7 @@ public abstract class HealthCheckBundle<C extends Configuration> implements Conf
                 new InstrumentedThreadFactory(threadFactory, metrics);
 
         final ScheduledExecutorService scheduledExecutorService =
-                lifecycle.scheduledExecutorService(baseName + "-scheduled-executor", instrumentedThreadFactory)
+                lifecycle.scheduledExecutorService(name + "-scheduled-executor", instrumentedThreadFactory)
                         .threads(numberOfScheduledHealthChecks)
                         .build();
 
@@ -114,8 +121,9 @@ public abstract class HealthCheckBundle<C extends Configuration> implements Conf
 
     protected HealthCheckManager createHealthCheckManager(final List<HealthCheckConfiguration> healthCheckConfigs,
                                                           final HealthCheckScheduler scheduler,
-                                                          final MetricRegistry metrics) {
-        return new HealthCheckManager(healthCheckConfigs, scheduler, metrics);
+                                                          final MetricRegistry metrics,
+                                                          final String name) {
+        return new HealthCheckManager(healthCheckConfigs, scheduler, metrics, name);
     }
 
     protected abstract HealthConfiguration getHealthConfiguration(C configuration);

@@ -20,7 +20,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -39,7 +39,7 @@ public class HealthCheckManagerTest {
         manager.onHealthCheckAdded(NAME, mock(HealthCheck.class));
 
         // then
-        verifyZeroInteractions(scheduler);
+        verifyNoInteractions(scheduler);
     }
 
     @Test
@@ -55,14 +55,35 @@ public class HealthCheckManagerTest {
         manager.onHealthCheckAdded(NAME, mock(HealthCheck.class));
 
         // then
-        verifyCheckWasScheduled(NAME, true);
+        verifyCheckWasScheduled(scheduler, NAME, true);
+    }
+
+    @Test
+    public void shouldNotEncounterNameConflictWhenMultipleConfiguredHealthCheckAddedForSeparateManagersWithTheSameRegistry() {
+        // given
+        final HealthCheckConfiguration config = new HealthCheckConfiguration();
+        config.setName(NAME);
+        config.setCritical(true);
+        config.setSchedule(new Schedule());
+        final HealthCheckScheduler scheduler2 = mock(HealthCheckScheduler.class);
+        final HealthCheckManager manager = new HealthCheckManager(Collections.singletonList(config), scheduler, new MetricRegistry());
+        final HealthCheckManager manager2 = new HealthCheckManager(Collections.singletonList(config), scheduler2, new MetricRegistry(),
+                "test2");
+
+        // when
+        manager.onHealthCheckAdded(NAME, mock(HealthCheck.class));
+        manager2.onHealthCheckAdded(NAME, mock(HealthCheck.class));
+
+        // then
+        verifyCheckWasScheduled(scheduler, NAME, true);
+        verifyCheckWasScheduled(scheduler2, NAME, true);
     }
 
     @Test
     public void shouldUnscheduleTaskWhenHealthCheckRemoved() {
         // given
         final ScheduledHealthCheck healthCheck = mock(ScheduledHealthCheck.class);
-        final HealthCheckManager manager = new HealthCheckManager(Collections.emptyList(), scheduler, new MetricRegistry(),
+        final HealthCheckManager manager = new HealthCheckManager(Collections.emptyList(), scheduler, new MetricRegistry(), null,
                 ImmutableMap.of(NAME, healthCheck));
 
         // when
@@ -81,7 +102,7 @@ public class HealthCheckManagerTest {
         manager.onStateChanged(NAME, false);
 
         // then
-        verifyZeroInteractions(scheduler);
+        verifyNoInteractions(scheduler);
     }
 
     @Test
@@ -106,7 +127,7 @@ public class HealthCheckManagerTest {
                 .isTrue();
         assertThat(afterFailure)
                 .isFalse();
-        verifyCheckWasScheduled(NAME, true);
+        verifyCheckWasScheduled(scheduler, NAME, true);
     }
 
     @Test
@@ -171,7 +192,7 @@ public class HealthCheckManagerTest {
         boolean afterFailure = manager.getIsAppHealthy().get();
 
         // then
-        verifyCheckWasScheduled(NAME, false);
+        verifyCheckWasScheduled(scheduler, NAME, false);
         assertThat(afterFailure).isTrue();
     }
 
@@ -260,13 +281,13 @@ public class HealthCheckManagerTest {
         final ScheduledHealthCheck check2 = new ScheduledHealthCheck(NAME_2, criticalConfig.isCritical(), check,
                 schedule, new State(NAME, schedule.getFailureAttempts(), schedule.getSuccessAttempts(),
                 (name, newState) -> {}), metrics.counter(NAME_2 + ".healthy"), metrics.counter(NAME_2 + ".unhealthy"));
-        final HealthCheckManager manager = new HealthCheckManager(configs, scheduler, metrics,
+        final HealthCheckManager manager = new HealthCheckManager(configs, scheduler, metrics, null,
                 ImmutableMap.of(NAME, check1, NAME_2, check2));
 
         // then
-        assertThat(metrics.gauge(HealthCheckManager.AGGREGATE_HEALTHY_METRIC_NAME, null).getValue())
+        assertThat(metrics.gauge(manager.getAggregateHealthyName(), null).getValue())
                 .isEqualTo(2L);
-        assertThat(metrics.gauge(HealthCheckManager.AGGREGATE_UNHEALTHY_METRIC_NAME, null).getValue())
+        assertThat(metrics.gauge(manager.getAggregateUnhealthyName(), null).getValue())
                 .isEqualTo(0L);
 
         // when
@@ -277,13 +298,13 @@ public class HealthCheckManagerTest {
         check2.run();
 
         // then
-        assertThat(metrics.gauge(HealthCheckManager.AGGREGATE_HEALTHY_METRIC_NAME, null).getValue())
+        assertThat(metrics.gauge(manager.getAggregateHealthyName(), null).getValue())
                 .isEqualTo(1L);
-        assertThat(metrics.gauge(HealthCheckManager.AGGREGATE_UNHEALTHY_METRIC_NAME, null).getValue())
+        assertThat(metrics.gauge(manager.getAggregateUnhealthyName(), null).getValue())
                 .isEqualTo(1L);
     }
 
-    private void verifyCheckWasScheduled(String name, boolean critical) {
+    private void verifyCheckWasScheduled(HealthCheckScheduler scheduler, String name, boolean critical) {
         ArgumentCaptor<ScheduledHealthCheck> checkCaptor = ArgumentCaptor.forClass(ScheduledHealthCheck.class);
         verify(scheduler).schedule(checkCaptor.capture(), eq(true));
         assertThat(checkCaptor.getValue().getName())
