@@ -25,20 +25,21 @@ import javax.servlet.http.HttpServlet;
 
 public abstract class HealthCheckBundle<C extends Configuration> implements ConfiguredBundle<C> {
     private static final Logger log = LoggerFactory.getLogger(HealthCheckBundle.class);
+    private static final String DEFAULT_BASE_NAME = "health-check";
+    private final String baseName;
     private final String name;
 
     public HealthCheckBundle() {
         this(null);
     }
 
-    public HealthCheckBundle(String name) {
-        final String baseName = "health-check";
+    protected HealthCheckBundle(String name) {
+        this.name = name;
         if (name != null) {
-            this.name = baseName + "-" + name;
+            this.baseName = DEFAULT_BASE_NAME + "-" + name;
         } else {
-            this.name = baseName;
+            this.baseName = DEFAULT_BASE_NAME;
         }
-
     }
 
     @Override
@@ -67,9 +68,8 @@ public abstract class HealthCheckBundle<C extends Configuration> implements Conf
         } else {
             servlet = healthConfig.getServletFactory().build(healthCheckManager.getIsAppHealthy());
         }
-
         environment.servlets()
-                .addServlet(name, servlet)
+                .addServlet(baseName + "-servlet", servlet)
                 .addMapping(healthConfig.getHealthCheckUrlPaths().toArray(new String[0]));
 
         // register listener for HealthCheckRegistry and setup validator to ensure correct config
@@ -89,7 +89,7 @@ public abstract class HealthCheckBundle<C extends Configuration> implements Conf
                                                                             final MetricRegistry metrics,
                                                                             final LifecycleEnvironment lifecycle) {
         final ThreadFactory threadFactory = new ThreadFactoryBuilder()
-                .setNameFormat(name + "-%d")
+                .setNameFormat(baseName + "-%d")
                 .setDaemon(true)
                 .setUncaughtExceptionHandler((t, e) -> log.error("Thread={} died due to uncaught exception", t, e))
                 .build();
@@ -98,7 +98,7 @@ public abstract class HealthCheckBundle<C extends Configuration> implements Conf
                 new InstrumentedThreadFactory(threadFactory, metrics);
 
         final ScheduledExecutorService scheduledExecutorService =
-                lifecycle.scheduledExecutorService(name + "-scheduled-executor", instrumentedThreadFactory)
+                lifecycle.scheduledExecutorService(baseName + "-scheduled-executor", instrumentedThreadFactory)
                         .threads(numberOfScheduledHealthChecks)
                         .build();
 
@@ -117,6 +117,16 @@ public abstract class HealthCheckBundle<C extends Configuration> implements Conf
      */
     protected HttpServlet createHealthCheckServlet(final AtomicBoolean isHealthy) {
         return null;
+    }
+
+    /**
+     * @deprecated use {@link #createHealthCheckManager(List, HealthCheckScheduler, MetricRegistry, String)} instead.
+     */
+    @Deprecated
+    protected HealthCheckManager createHealthCheckManager(final List<HealthCheckConfiguration> healthCheckConfigs,
+                                                          final HealthCheckScheduler scheduler,
+                                                          final MetricRegistry metrics) {
+        return createHealthCheckManager(healthCheckConfigs, scheduler, metrics, null);
     }
 
     protected HealthCheckManager createHealthCheckManager(final List<HealthCheckConfiguration> healthCheckConfigs,
