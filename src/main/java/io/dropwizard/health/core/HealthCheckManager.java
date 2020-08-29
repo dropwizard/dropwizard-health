@@ -28,7 +28,7 @@ public class HealthCheckManager implements HealthCheckRegistryListener, StateCha
     private final Map<String, ScheduledHealthCheck> checks;
     private final Map<String, HealthCheckConfiguration> configs;
     private final MetricRegistry metrics;
-    private final String healthCheckNamePrefix;
+    private final String managerName;
     private final String aggregateHealthyName;
     private final String aggregateUnhealthyName;
 
@@ -41,25 +41,25 @@ public class HealthCheckManager implements HealthCheckRegistryListener, StateCha
     public HealthCheckManager(final List<HealthCheckConfiguration> configs,
                               final HealthCheckScheduler scheduler,
                               final MetricRegistry metrics,
-                              final String healthCheckNamePrefix) {
-        this(configs, scheduler, metrics, healthCheckNamePrefix, new HashMap<>());
+                              final String managerName) {
+        this(configs, scheduler, metrics, managerName, new HashMap<>());
     }
 
     // Visible for testing
     HealthCheckManager(final List<HealthCheckConfiguration> configs,
                        final HealthCheckScheduler scheduler,
                        final MetricRegistry metrics,
-                       final String healthCheckNamePrefix,
+                       final String managerName,
                        final Map<String, ScheduledHealthCheck> checks) {
         this.configs = configs.stream()
                 .collect(Collectors.toMap(HealthCheckConfiguration::getName, Function.identity()));
         this.scheduler = Objects.requireNonNull(scheduler);
         this.metrics = Objects.requireNonNull(metrics);
-        this.healthCheckNamePrefix = healthCheckNamePrefix;
+        this.managerName = managerName;
         this.checks = Objects.requireNonNull(checks);
 
-        this.aggregateHealthyName = MetricRegistry.name("health", healthCheckNamePrefix, "aggregate", "healthy");
-        this.aggregateUnhealthyName = MetricRegistry.name("health", healthCheckNamePrefix, "aggregate", "unhealthy");
+        this.aggregateHealthyName = MetricRegistry.name("health", managerName, "aggregate", "healthy");
+        this.aggregateUnhealthyName = MetricRegistry.name("health", managerName, "aggregate", "unhealthy");
         metrics.register(aggregateHealthyName, (Gauge) this::calculateNumberOfHealthyChecks);
         metrics.register(aggregateUnhealthyName, (Gauge) this::calculateNumberOfUnhealthyChecks);
     }
@@ -77,8 +77,8 @@ public class HealthCheckManager implements HealthCheckRegistryListener, StateCha
         final boolean critical = config.isCritical();
 
         final State state = new State(name, schedule.getFailureAttempts(), schedule.getSuccessAttempts(), this);
-        final Counter healthyCheckCounter = metrics.counter(MetricRegistry.name("health", healthCheckNamePrefix, name, "healthy"));
-        final Counter unhealthyCheckCounter = metrics.counter(MetricRegistry.name("health", healthCheckNamePrefix, name, "unhealthy"));
+        final Counter healthyCheckCounter = metrics.counter(MetricRegistry.name("health", managerName, name, "healthy"));
+        final Counter unhealthyCheckCounter = metrics.counter(MetricRegistry.name("health", managerName, name, "unhealthy"));
 
         final ScheduledHealthCheck check = new ScheduledHealthCheck(name, critical, healthCheck, schedule, state, healthyCheckCounter,
                 unhealthyCheckCounter);
