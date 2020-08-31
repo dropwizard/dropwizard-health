@@ -25,14 +25,21 @@ import javax.servlet.http.HttpServlet;
 
 public abstract class HealthCheckBundle<C extends Configuration> implements ConfiguredBundle<C> {
     private static final Logger log = LoggerFactory.getLogger(HealthCheckBundle.class);
+    private static final String DEFAULT_BASE_NAME = "health-check";
     private final String baseName;
+    private final String name;
 
     public HealthCheckBundle() {
-        this("health-check");
+        this(null);
     }
 
-    protected HealthCheckBundle(String baseName) {
-        this.baseName = baseName;
+    protected HealthCheckBundle(String name) {
+        this.name = name;
+        if (name != null) {
+            this.baseName = DEFAULT_BASE_NAME + "-" + name;
+        } else {
+            this.baseName = DEFAULT_BASE_NAME;
+        }
     }
 
     @Override
@@ -50,7 +57,7 @@ public abstract class HealthCheckBundle<C extends Configuration> implements Conf
         final ScheduledExecutorService scheduledHealthCheckExecutor = createScheduledExecutorForHealthChecks(
                 healthCheckConfigs.size(), metrics, environment.lifecycle());
         final HealthCheckScheduler scheduler = new HealthCheckScheduler(scheduledHealthCheckExecutor);
-        final HealthCheckManager healthCheckManager = createHealthCheckManager(healthCheckConfigs, scheduler, metrics);
+        final HealthCheckManager healthCheckManager = createHealthCheckManager(healthCheckConfigs, scheduler, metrics, name);
         healthCheckManager.initializeAppHealth();
 
         // setup servlet to respond to health check requests
@@ -112,10 +119,21 @@ public abstract class HealthCheckBundle<C extends Configuration> implements Conf
         return null;
     }
 
+    /**
+     * @deprecated use {@link #createHealthCheckManager(List, HealthCheckScheduler, MetricRegistry, String)} instead.
+     */
+    @Deprecated
     protected HealthCheckManager createHealthCheckManager(final List<HealthCheckConfiguration> healthCheckConfigs,
                                                           final HealthCheckScheduler scheduler,
                                                           final MetricRegistry metrics) {
-        return new HealthCheckManager(healthCheckConfigs, scheduler, metrics);
+        return createHealthCheckManager(healthCheckConfigs, scheduler, metrics, null);
+    }
+
+    protected HealthCheckManager createHealthCheckManager(final List<HealthCheckConfiguration> healthCheckConfigs,
+                                                          final HealthCheckScheduler scheduler,
+                                                          final MetricRegistry metrics,
+                                                          final String name) {
+        return new HealthCheckManager(healthCheckConfigs, scheduler, metrics, name);
     }
 
     protected abstract HealthConfiguration getHealthConfiguration(C configuration);
