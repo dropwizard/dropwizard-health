@@ -5,7 +5,7 @@
 
   <groupId>io.dropwizard.modules</groupId>
   <artifactId>dropwizard-health</artifactId>
-  <version>1.6.0</version>
+  <version>1.6.1-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>Dropwizard Health</name>
@@ -24,9 +24,9 @@
 
   <developers>
     <developer>
-      <id>mzamani1</id>
-      <name>Michael Zamani</name>
-      <email>mzamani@apple.com</email>
+      <id>natalie-zamani</id>
+      <name>Natalie Zamani</name>
+      <email>natalie.zamani@apple.com</email>
     </developer>
     <developer>
       <id>pstackle</id>
@@ -39,7 +39,7 @@
     <developerConnection>scm:git:git@github.com:dropwizard/dropwizard-health.git</developerConnection>
     <connection>scm:git:https://github.com/dropwizard/dropwizard-health.git</connection>
     <url>https://github.com/dropwizard/dropwizard-health</url>
-    <tag>dropwizard-health-1.6.0</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <issueManagement>
