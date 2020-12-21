@@ -74,12 +74,7 @@ public class HttpHealthCheckTest {
                         .withFault(Fault.RANDOM_DATA_THEN_CLOSE)
                         .withStatus(200)));
 
-        try {
-            httpHealthCheck.check();
-            fail("Exception should have been thrown");
-        } catch (final Exception e) {
-            // swallow
-        }
+        assertThat(httpHealthCheck.check().isHealthy()).isFalse();
 
         stubFor(get(urlEqualTo(PATH))
                 .willReturn(aResponse()
