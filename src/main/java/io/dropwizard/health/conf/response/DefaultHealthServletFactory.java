@@ -3,6 +3,7 @@ package io.dropwizard.health.conf.response;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dropwizard.health.core.HealthCheckServlet;
+import io.dropwizard.health.core.HealthStatusChecker;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -71,9 +72,16 @@ public class DefaultHealthServletFactory implements HealthServletFactory {
         this.unhealthyValue = unhealthyValue;
     }
 
+    @Deprecated
     @Override
     public HttpServlet build(AtomicBoolean isHealthy) {
-        return new HealthCheckServlet(isHealthy, cacheControlEnabled, cacheControlValue, contentType, healthyValue,
-                unhealthyValue);
+        return new HealthCheckServlet(isHealthy, cacheControlEnabled, cacheControlValue, contentType,
+                healthyValue, unhealthyValue);
+    }
+
+    @Override
+    public HttpServlet build(HealthStatusChecker healthStatusChecker) {
+        return new HealthCheckServlet(healthStatusChecker, cacheControlEnabled, cacheControlValue, contentType,
+                healthyValue, unhealthyValue);
     }
 }

@@ -14,6 +14,7 @@ v1.3.x            | :white_check_mark: | :white_check_mark:
 v1.4.x            | :white_check_mark: | :white_check_mark:
 v1.5.x            | :white_check_mark: | :white_check_mark:
 v1.6.x            | :white_check_mark: | :white_check_mark:
+v1.7.x            | :white_check_mark: | :white_check_mark:
 
 
 ## Usage
@@ -31,12 +32,12 @@ In your application's `Configuration` class, add a `HealthConfiguration` object:
 ```java
 public class ExampleConfiguration extends Configuration {
     ...
-     
+
     @Valid
     @NotNull
     @JsonProperty("health")
     private HealthConfiguration healthConfiguration = new HealthConfiguration();
-    
+
     public HealthConfiguration getHealthConfiguration() {
         return healthConfiguration;
     }
@@ -93,6 +94,7 @@ servlet | default health servlet | The health servlet that is used to generate h
 Name | Default | Description
 ---- | ------- | -----------
 name | (none) | The name of this health check. This must be unique.
+type | ready | The type of this health check. This is either `alive` or `ready`. See the [Application Status section](#application-status) for more details.
 critical | false | Flag indicating whether this dependency is critical to determine the health of the application. If `true` and this dependency is unhealthy, the application will also be marked as unhealthy.
 schedule | (none) | The schedule that this health check will be run on. See the [Schedule section](#schedule) for more details.
 
@@ -113,11 +115,29 @@ contentType | application/json | The value of the `Content-Type` header in the h
 healthyValue | {"status":"healthy"} | The value of the body of the health check response when the application is healthy.
 unhealthyValue | {"status":"unhealthy"} | The value of the body of the health check response when the application is unhealthy.
 
-## Example
+## Application Status
+There are two types of status that are supported: Alive and Ready
+
+### alive
+An `alive` status indicates the application is operating normally and does not need to be restarted to recover from a
+stuck state.
+
+Long-running applications can eventually reach a broken state and cannot recover except by being restarted
+(e.g. deadlocked threads).
+
+### ready
+A `ready` status indicates the application is ready to serve traffic.
+
+Applications can temporarily be unable to serve traffic due to a variety of reasons, for example, an application might
+need to build/compute large caches during startup or can critically depend on an external service.
+
+### Query Application Status
+https://<hostname>:<port>/health-check?type=<type> (replace `<type>` with `ready` or `alive`; defaults to `ready`)
+
 Healthy
 ```bash
-$ curl -v https://<hostname>:<port>/health-check
-> GET /health-check HTTP/1.1
+$ curl -v https://<hostname>:<port>/health-check?type=ready
+> GET /health-check?type=ready HTTP/1.1
 ...
 >
 < HTTP/1.1 200 OK
@@ -130,8 +150,8 @@ $ curl -v https://<hostname>:<port>/health-check
 
 Not Healthy
 ```bash
-$ curl -v https://<hostname>:<port>/health-check
-> GET /health-check HTTP/1.1
+$ curl -v https://<hostname>:<port>/health-check?type=ready
+> GET /health-check?type=ready HTTP/1.1
 ...
 >
 < HTTP/1.1 503 Service Unavailable
@@ -144,7 +164,7 @@ $ curl -v https://<hostname>:<port>/health-check
 
 ## HTTP and TCP Health Checks
 Should your service have any dependencies that it needs to perform health checks against that expose either an HTTP or TCP health check interface,
-you can use the `HttpHealthCheck` or `TcpHealthCheck` classes to do so easily. 
+you can use the `HttpHealthCheck` or `TcpHealthCheck` classes to do so easily.
 
 ### Usage
 You will need to register your health check(s) in your `Application` class `run()` method.
@@ -167,12 +187,12 @@ public void run(final AppConfiguration configuration, final Environment environm
 ```
 
 ## Composite Health Checks
-You might find you need a health check that is a composite of more than one other health check. For instance, consider the case where you have 
-a database and a cache, and if only one of those two are unhealthy, your service can still fulfill a subset of functionality, and thus 
+You might find you need a health check that is a composite of more than one other health check. For instance, consider the case where you have
+a database and a cache, and if only one of those two are unhealthy, your service can still fulfill a subset of functionality, and thus
 should not necessarily be marked down.
 
 Let's say that you have a database health check registered under the name `UserDatabase` and a cache health check under the name `UserCache`.
-Below, see an example of how you might create a health check that is a composite of these two checks. Note that there does not exist a 
+Below, see an example of how you might create a health check that is a composite of these two checks. Note that there does not exist a
 `CompositeHealthCheck` class currently, but it might be a nice addition to this library.
 
 #### Example Composite Health Check
@@ -198,6 +218,5 @@ health:
 
 ## Future improvements:
 * Hooks for health status change events.
-* Better support for Cloud-native liveness and readiness checks.
 * The ability to expose health check data to other modules (for instance, an Admin page may want to show historical health check results).
 * More out-of-the-box generally useful health checks implementations, like file-system health checks.
