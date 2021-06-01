@@ -1,6 +1,7 @@
 package io.dropwizard.health.conf.response;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.dropwizard.health.core.HealthStatusChecker;
 import io.dropwizard.jackson.Discoverable;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -19,6 +20,16 @@ public interface HealthServletFactory extends Discoverable {
      *
      * @param isHealthy a flag indicating whether the application is healthy or not
      * @return a {@link HttpServlet} that responds to health check requests
+     * @deprecated use {@link #build(HealthStatusChecker)} instead.
      */
+    @Deprecated
     HttpServlet build(final AtomicBoolean isHealthy);
+
+    /**
+     * Build a servlet for responding to health check requests (e.g. from load balancer).
+     *
+     * @param healthStatusChecker an interface that exposes the ability to check current status of health.
+     * @return a {@link HttpServlet} that responds to health check requests
+     */
+    HttpServlet build(final HealthStatusChecker healthStatusChecker);
 }

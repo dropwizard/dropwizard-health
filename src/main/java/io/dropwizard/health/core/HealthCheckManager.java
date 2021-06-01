@@ -6,7 +6,10 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.health.HealthCheck;
 import com.codahale.metrics.health.HealthCheckRegistryListener;
 import io.dropwizard.health.conf.HealthCheckConfiguration;
+import io.dropwizard.health.conf.HealthCheckType;
 import io.dropwizard.health.conf.Schedule;
+import io.dropwizard.health.shutdown.ShutdownNotifier;
+import io.dropwizard.util.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,30 +22,53 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class HealthCheckManager implements HealthCheckRegistryListener, StateChangedCallback {
+public class HealthCheckManager implements HealthCheckRegistryListener, StateChangedCallback, HealthStatusChecker,
+        ShutdownNotifier {
     private static final Logger log = LoggerFactory.getLogger(HealthCheckManager.class);
+    private static final Duration DEFAULT_SHUTDOWN_WAIT_PERIOD = Duration.seconds(15);
 
+    private final AtomicBoolean isAppAlive = new AtomicBoolean(true);
     private final AtomicBoolean isAppHealthy = new AtomicBoolean(false);
     private final AtomicInteger unhealthyCriticalHealthChecks = new AtomicInteger();
+    private final AtomicInteger unhealthyCriticalAliveChecks = new AtomicInteger();
     private final HealthCheckScheduler scheduler;
     private final Map<String, ScheduledHealthCheck> checks;
     private final Map<String, HealthCheckConfiguration> configs;
     private final MetricRegistry metrics;
     private final String managerName;
+    private final Duration shutdownWaitPeriod;
     private final String aggregateHealthyName;
     private final String aggregateUnhealthyName;
+    private volatile boolean shuttingDown = false;
 
+    @Deprecated
     public HealthCheckManager(final List<HealthCheckConfiguration> configs,
                               final HealthCheckScheduler scheduler,
                               final MetricRegistry metrics) {
-        this(configs, scheduler, metrics, null);
+        this(configs, scheduler, metrics, DEFAULT_SHUTDOWN_WAIT_PERIOD);
     }
 
     public HealthCheckManager(final List<HealthCheckConfiguration> configs,
                               final HealthCheckScheduler scheduler,
                               final MetricRegistry metrics,
+                              final Duration shutdownWaitPeriod) {
+        this(configs, scheduler, metrics, null, shutdownWaitPeriod);
+    }
+
+    @Deprecated
+    public HealthCheckManager(final List<HealthCheckConfiguration> configs,
+                              final HealthCheckScheduler scheduler,
+                              final MetricRegistry metrics,
                               final String managerName) {
-        this(configs, scheduler, metrics, managerName, new HashMap<>());
+        this(configs, scheduler, metrics, managerName, DEFAULT_SHUTDOWN_WAIT_PERIOD);
+    }
+
+    public HealthCheckManager(final List<HealthCheckConfiguration> configs,
+                              final HealthCheckScheduler scheduler,
+                              final MetricRegistry metrics,
+                              final String managerName,
+                              final Duration shutdownWaitPeriod) {
+        this(configs, scheduler, metrics, managerName, shutdownWaitPeriod, new HashMap<>());
     }
 
     // Visible for testing
@@ -50,12 +76,14 @@ public class HealthCheckManager implements HealthCheckRegistryListener, StateCha
                        final HealthCheckScheduler scheduler,
                        final MetricRegistry metrics,
                        final String managerName,
+                       final Duration shutdownWaitPeriod,
                        final Map<String, ScheduledHealthCheck> checks) {
         this.configs = configs.stream()
                 .collect(Collectors.toMap(HealthCheckConfiguration::getName, Function.identity()));
         this.scheduler = Objects.requireNonNull(scheduler);
         this.metrics = Objects.requireNonNull(metrics);
         this.managerName = managerName;
+        this.shutdownWaitPeriod = shutdownWaitPeriod;
         this.checks = Objects.requireNonNull(checks);
 
         this.aggregateHealthyName = MetricRegistry.name("health", managerName, "aggregate", "healthy");
@@ -74,14 +102,16 @@ public class HealthCheckManager implements HealthCheckRegistryListener, StateCha
         }
 
         final Schedule schedule = config.getSchedule();
-        final boolean critical = config.isCritical();
+        final HealthCheckType type = config.getType();
+        // type of 'alive' implies 'critical'
+        final boolean critical = (type == HealthCheckType.ALIVE) || config.isCritical();
 
         final State state = new State(name, schedule.getFailureAttempts(), schedule.getSuccessAttempts(), this);
         final Counter healthyCheckCounter = metrics.counter(MetricRegistry.name("health", managerName, name, "healthy"));
         final Counter unhealthyCheckCounter = metrics.counter(MetricRegistry.name("health", managerName, name, "unhealthy"));
 
-        final ScheduledHealthCheck check = new ScheduledHealthCheck(name, critical, healthCheck, schedule, state, healthyCheckCounter,
-                unhealthyCheckCounter);
+        final ScheduledHealthCheck check = new ScheduledHealthCheck(name, type, critical, healthCheck, schedule, state,
+                healthyCheckCounter, unhealthyCheckCounter);
         checks.put(name, check);
 
         scheduler.schedule(check, true);
@@ -103,9 +133,9 @@ public class HealthCheckManager implements HealthCheckRegistryListener, StateCha
         }
 
         if (check.isCritical()) {
-            handleCriticalHealthChange(check.getName(), isNowHealthy);
+            handleCriticalHealthChange(check.getName(), check.getType(), isNowHealthy);
         } else {
-            handleNonCriticalHealthChange(check.getName(), isNowHealthy);
+            handleNonCriticalHealthChange(check.getName(), check.getType(), isNowHealthy);
         }
 
         scheduler.schedule(check, isNowHealthy);
@@ -129,30 +159,52 @@ public class HealthCheckManager implements HealthCheckRegistryListener, StateCha
                 .count();
     }
 
-    private void handleCriticalHealthChange(final String name, final boolean isNowHealthy) {
-        final int newNumberOfUnhealthyCriticalHealthChecks;
-
+    private void handleCriticalHealthChange(final String name, final HealthCheckType type, final boolean isNowHealthy) {
         if (isNowHealthy) {
-            log.info("A critical dependency is now healthy: name={}", name);
-            newNumberOfUnhealthyCriticalHealthChecks = unhealthyCriticalHealthChecks.decrementAndGet();
+            log.info("A critical dependency is now healthy: name={}, type={}", name, type);
+            switch (type) {
+                case ALIVE:
+                    updateCriticalStatus(isAppAlive, unhealthyCriticalAliveChecks.decrementAndGet());
+                    return;
+                case READY:
+                    if (!shuttingDown) {
+                        updateCriticalStatus(isAppHealthy, unhealthyCriticalHealthChecks.decrementAndGet());
+                    } else {
+                        log.info("Status change is ignored during shutdown: name={}, type={}", name, type);
+                    }
+                    return;
+            }
         } else {
-            log.error("A critical dependency is now unhealthy: name={}", name);
-            newNumberOfUnhealthyCriticalHealthChecks = unhealthyCriticalHealthChecks.incrementAndGet();
+            log.error("A critical dependency is now unhealthy: name={}, type={}", name, type);
+            switch (type) {
+                case ALIVE:
+                    updateCriticalStatus(isAppAlive, unhealthyCriticalAliveChecks.incrementAndGet());
+                    return;
+                case READY:
+                    updateCriticalStatus(isAppHealthy, unhealthyCriticalHealthChecks.incrementAndGet());
+                    return;
+            }
         }
-
-        log.debug("current status: unhealthy-critical={}", newNumberOfUnhealthyCriticalHealthChecks);
-
-        isAppHealthy.set(newNumberOfUnhealthyCriticalHealthChecks == 0);
+        log.warn("Unexpected health check type: type={}", type);
     }
 
-    private void handleNonCriticalHealthChange(final String name, final boolean isNowHealthy) {
+    private void updateCriticalStatus(final AtomicBoolean status, final int count) {
+        status.set(count == 0);
+        log.debug("current status: unhealthy-critical={}", count);
+    }
+
+    private void handleNonCriticalHealthChange(final String name, final HealthCheckType type, final boolean isNowHealthy) {
         if (isNowHealthy) {
-            log.info("A non-critical dependency is now healthy: name={}", name);
+            log.info("A non-critical dependency is now healthy: name={}, type={}", name, type);
         } else {
-            log.warn("A non-critical dependency is now unhealthy: name={}", name);
+            log.warn("A non-critical dependency is now unhealthy: name={}, type={}", name, type);
         }
     }
 
+    /**
+     * @deprecated use {@link #isHealthy()} instead.
+     */
+    @Deprecated
     public AtomicBoolean getIsAppHealthy() {
         return isAppHealthy;
     }
@@ -163,5 +215,33 @@ public class HealthCheckManager implements HealthCheckRegistryListener, StateCha
 
     String getAggregateUnhealthyName() {
         return aggregateUnhealthyName;
+    }
+
+    @Override
+    public boolean isHealthy() {
+        return isAppAlive.get() && isAppHealthy.get();
+    }
+
+    @Override
+    public boolean isHealthy(String type) {
+        if (HealthCheckType.ALIVE.name().equalsIgnoreCase(type)) {
+            return isAppAlive.get();
+        } else {
+            return isHealthy();
+        }
+    }
+
+    @Override
+    public void notifyShutdownStarted() throws Exception {
+        shuttingDown = true;
+        log.info("delayed shutdown: started (waiting {})", shutdownWaitPeriod);
+
+        // set healthy to false to indicate to the load balancer that it should not be in rotation for requests
+        isAppHealthy.set(false);
+
+        // sleep for period of time to give time for load balancer to realize requests should not be sent anymore
+        Thread.sleep(shutdownWaitPeriod.toMilliseconds());
+
+        log.info("delayed shutdown: finished");
     }
 }

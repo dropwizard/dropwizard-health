@@ -14,12 +14,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class DelayedShutdownHandler extends AbstractLifeCycle {
     private static final Logger log = LoggerFactory.getLogger(DelayedShutdownHandler.class);
-    private final AtomicBoolean healthy;
-    private final Duration shutdownWaitPeriod;
+    private final ShutdownNotifier shutdownNotifier;
 
+    @Deprecated
     public DelayedShutdownHandler(AtomicBoolean healthy, Duration shutdownWaitPeriod) {
-        this.healthy = healthy;
-        this.shutdownWaitPeriod = shutdownWaitPeriod;
+        this(new LegacyShutdownNotifier(healthy, shutdownWaitPeriod));
+    }
+
+    public DelayedShutdownHandler(final ShutdownNotifier shutdownNotifier) {
+        this.shutdownNotifier = shutdownNotifier;
     }
 
     public void register() {
@@ -36,14 +39,29 @@ public class DelayedShutdownHandler extends AbstractLifeCycle {
 
     @Override
     protected void doStop() throws Exception {
-        log.info("delayed shutdown: started (waiting {})", shutdownWaitPeriod);
+        shutdownNotifier.notifyShutdownStarted();
+    }
 
-        // set healthy to false to indicate to the load balancer that it should not be in rotation for requests
-        healthy.set(false);
+    private static class LegacyShutdownNotifier implements ShutdownNotifier {
+        private final AtomicBoolean healthy;
+        private final Duration shutdownWaitPeriod;
 
-        // sleep for period of time to give time for load balancer to realize requests should not be sent anymore
-        Thread.sleep(shutdownWaitPeriod.toMilliseconds());
+        public LegacyShutdownNotifier(AtomicBoolean healthy, Duration shutdownWaitPeriod) {
+            this.healthy = healthy;
+            this.shutdownWaitPeriod = shutdownWaitPeriod;
+        }
 
-        log.info("delayed shutdown: finished");
+        @Override
+        public void notifyShutdownStarted() throws InterruptedException {
+            log.info("delayed shutdown: started (waiting {})", shutdownWaitPeriod);
+
+            // set healthy to false to indicate to the load balancer that it should not be in rotation for requests
+            healthy.set(false);
+
+            // sleep for period of time to give time for load balancer to realize requests should not be sent anymore
+            Thread.sleep(shutdownWaitPeriod.toMilliseconds());
+
+            log.info("delayed shutdown: finished");
+        }
     }
 }

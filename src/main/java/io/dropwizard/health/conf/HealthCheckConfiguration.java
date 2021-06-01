@@ -13,6 +13,10 @@ public class HealthCheckConfiguration {
     @JsonProperty
     private String name;
 
+    @NotNull
+    @JsonProperty
+    private HealthCheckType type = HealthCheckType.READY;
+
     @JsonProperty
     private boolean critical = false;
 
@@ -27,6 +31,14 @@ public class HealthCheckConfiguration {
 
     public void setName(final String name) {
         this.name = name;
+    }
+
+    public HealthCheckType getType() {
+        return type;
+    }
+
+    public void setType(HealthCheckType type) {
+        this.type = type;
     }
 
     public boolean isCritical() {

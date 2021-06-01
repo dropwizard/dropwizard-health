@@ -57,7 +57,8 @@ public abstract class HealthCheckBundle<C extends Configuration> implements Conf
         final ScheduledExecutorService scheduledHealthCheckExecutor = createScheduledExecutorForHealthChecks(
                 healthCheckConfigs.size(), metrics, environment.lifecycle());
         final HealthCheckScheduler scheduler = new HealthCheckScheduler(scheduledHealthCheckExecutor);
-        final HealthCheckManager healthCheckManager = createHealthCheckManager(healthCheckConfigs, scheduler, metrics, name);
+        final HealthCheckManager healthCheckManager = createHealthCheckManager(healthCheckConfigs, scheduler, metrics,
+                name, healthConfig.getShutdownWaitPeriod());
         healthCheckManager.initializeAppHealth();
 
         // setup servlet to respond to health check requests
@@ -66,7 +67,7 @@ public abstract class HealthCheckBundle<C extends Configuration> implements Conf
         if (userProvidedServlet != null) {
             servlet = userProvidedServlet;
         } else {
-            servlet = healthConfig.getServletFactory().build(healthCheckManager.getIsAppHealthy());
+            servlet = healthConfig.getServletFactory().build(healthCheckManager);
         }
         environment.servlets()
                 .addServlet(baseName + "-servlet", servlet)
@@ -79,8 +80,7 @@ public abstract class HealthCheckBundle<C extends Configuration> implements Conf
         // register shutdown handler with Jetty
         final Duration shutdownWaitPeriod = healthConfig.getShutdownWaitPeriod();
         if (healthConfig.isDelayedShutdownHandlerEnabled() && shutdownWaitPeriod.toMilliseconds() > 0) {
-            final DelayedShutdownHandler shutdownHandler = new DelayedShutdownHandler(
-                    healthCheckManager.getIsAppHealthy(), shutdownWaitPeriod);
+            final DelayedShutdownHandler shutdownHandler = new DelayedShutdownHandler(healthCheckManager);
             shutdownHandler.register();
         }
     }
@@ -129,11 +129,23 @@ public abstract class HealthCheckBundle<C extends Configuration> implements Conf
         return createHealthCheckManager(healthCheckConfigs, scheduler, metrics, null);
     }
 
+    /**
+     * @deprecated use {@link #createHealthCheckManager(List, HealthCheckScheduler, MetricRegistry, String, Duration)} instead.
+     */
+    @Deprecated
     protected HealthCheckManager createHealthCheckManager(final List<HealthCheckConfiguration> healthCheckConfigs,
                                                           final HealthCheckScheduler scheduler,
                                                           final MetricRegistry metrics,
                                                           final String name) {
         return new HealthCheckManager(healthCheckConfigs, scheduler, metrics, name);
+    }
+
+    protected HealthCheckManager createHealthCheckManager(final List<HealthCheckConfiguration> healthCheckConfigs,
+                                                          final HealthCheckScheduler scheduler,
+                                                          final MetricRegistry metrics,
+                                                          final String name,
+                                                          final Duration shutdownWaitPeriod) {
+        return new HealthCheckManager(healthCheckConfigs, scheduler, metrics, name, shutdownWaitPeriod);
     }
 
     protected abstract HealthConfiguration getHealthConfiguration(C configuration);

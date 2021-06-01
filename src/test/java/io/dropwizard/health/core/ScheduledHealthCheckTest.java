@@ -3,6 +3,7 @@ package io.dropwizard.health.core;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.health.HealthCheck;
+import io.dropwizard.health.conf.HealthCheckType;
 import io.dropwizard.health.conf.Schedule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -32,8 +33,8 @@ public class ScheduledHealthCheckTest {
         final Counter healthyCounter = metrics.counter("test.healthy");
         final Counter unhealthyCounter = metrics.counter("test.unhealthy");
         final State state = new State(name, schedule.getFailureAttempts(), schedule.getSuccessAttempts(), (checkName, newState) -> {});
-        final ScheduledHealthCheck scheduledHealthCheck = new ScheduledHealthCheck(name, true, healthCheck, schedule, state,
-                healthyCounter, unhealthyCounter);
+        final ScheduledHealthCheck scheduledHealthCheck = new ScheduledHealthCheck(name, HealthCheckType.READY, true,
+                healthCheck, schedule, state, healthyCounter, unhealthyCounter);
 
         when(healthCheck.execute()).thenReturn(HealthCheck.Result.healthy());
 
@@ -53,8 +54,8 @@ public class ScheduledHealthCheckTest {
         final Counter healthyCounter = metrics.counter("test.healthy");
         final Counter unhealthyCounter = metrics.counter("test.unhealthy");
         final State state = new State(name, schedule.getFailureAttempts(), schedule.getSuccessAttempts(), (checkName, newState) -> {});
-        final ScheduledHealthCheck scheduledHealthCheck = new ScheduledHealthCheck(name, true, healthCheck, schedule, state,
-                healthyCounter, unhealthyCounter);
+        final ScheduledHealthCheck scheduledHealthCheck = new ScheduledHealthCheck(name, HealthCheckType.READY, true,
+                healthCheck, schedule, state, healthyCounter, unhealthyCounter);
         when(healthCheck.execute()).thenReturn(HealthCheck.Result.unhealthy("something happened"));
 
         scheduledHealthCheck.run();

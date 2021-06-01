@@ -1,5 +1,6 @@
 package io.dropwizard.health.core;
 
+import io.dropwizard.health.conf.HealthCheckType;
 import io.dropwizard.health.conf.Schedule;
 
 import com.codahale.metrics.Counter;
@@ -12,6 +13,7 @@ import java.util.Objects;
 class ScheduledHealthCheck implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(ScheduledHealthCheck.class);
     private final String name;
+    private final HealthCheckType type;
     private final boolean critical;
     private final HealthCheck healthCheck;
     private final Schedule schedule;
@@ -20,6 +22,7 @@ class ScheduledHealthCheck implements Runnable {
     private final Counter unhealthyCheckCounter;
 
     ScheduledHealthCheck(final String name,
+                         final HealthCheckType type,
                          final boolean critical,
                          final HealthCheck healthCheck,
                          final Schedule schedule,
@@ -27,6 +30,7 @@ class ScheduledHealthCheck implements Runnable {
                          final Counter healthyCheckCounter,
                          final Counter unhealthyCheckCounter) {
         this.name = Objects.requireNonNull(name);
+        this.type = type;
         this.critical = critical;
         this.healthCheck = Objects.requireNonNull(healthCheck);
         this.schedule = Objects.requireNonNull(schedule);
@@ -37,6 +41,10 @@ class ScheduledHealthCheck implements Runnable {
 
     public String getName() {
         return name;
+    }
+
+    public HealthCheckType getType() {
+        return type;
     }
 
     public boolean isCritical() {
