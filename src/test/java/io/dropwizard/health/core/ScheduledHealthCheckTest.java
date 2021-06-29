@@ -32,7 +32,8 @@ public class ScheduledHealthCheckTest {
 
         final Counter healthyCounter = metrics.counter("test.healthy");
         final Counter unhealthyCounter = metrics.counter("test.unhealthy");
-        final State state = new State(name, schedule.getFailureAttempts(), schedule.getSuccessAttempts(), (checkName, newState) -> {});
+        final State state = new State(name, schedule.getFailureAttempts(), schedule.getSuccessAttempts(), true,
+                (checkName, newState) -> {});
         final ScheduledHealthCheck scheduledHealthCheck = new ScheduledHealthCheck(name, HealthCheckType.READY, true,
                 healthCheck, schedule, state, healthyCounter, unhealthyCounter);
 
@@ -53,7 +54,8 @@ public class ScheduledHealthCheckTest {
         final String name = "test";
         final Counter healthyCounter = metrics.counter("test.healthy");
         final Counter unhealthyCounter = metrics.counter("test.unhealthy");
-        final State state = new State(name, schedule.getFailureAttempts(), schedule.getSuccessAttempts(), (checkName, newState) -> {});
+        final State state = new State(name, schedule.getFailureAttempts(), schedule.getSuccessAttempts(), true,
+                (checkName, newState) -> {});
         final ScheduledHealthCheck scheduledHealthCheck = new ScheduledHealthCheck(name, HealthCheckType.READY, true,
                 healthCheck, schedule, state, healthyCounter, unhealthyCounter);
         when(healthCheck.execute()).thenReturn(HealthCheck.Result.unhealthy("something happened"));

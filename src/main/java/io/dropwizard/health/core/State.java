@@ -14,7 +14,7 @@ class State {
     private final int failureAttempts;
     private final StateChangedCallback stateChangedCallback;
     private final AtomicInteger counter = new AtomicInteger(0);
-    private final AtomicBoolean healthy = new AtomicBoolean(true);
+    private final AtomicBoolean healthy;
 
     /**
      * Creates instance that is used to track state of a health check.
@@ -24,14 +24,17 @@ class State {
      *                                (from a healthy state)
      * @param successAttempts         the threshold of consecutive successful attempts needed to mark a dependency as healthy
      *                                (from an unhealthy state)
+     * @param initialState            initial state ({@code true} indicates to start in a healthy state and
+     *                                {@code false} indicates to start in an unhealthy state)
      * @param stateChangedCallback    {@link StateChangedCallback} that is called when state changes
      *                                (e.g. healthy to unhealthy or unhealthy to healthy)
      */
-    State(final String name, final int failureAttempts, final int successAttempts,
+    State(final String name, final int failureAttempts, final int successAttempts, final boolean initialState,
           final StateChangedCallback stateChangedCallback) {
         this.name = name;
         this.failureAttempts = failureAttempts;
         this.successAttempts = successAttempts;
+        this.healthy = new AtomicBoolean(initialState);
         this.stateChangedCallback = stateChangedCallback;
     }
 

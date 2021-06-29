@@ -1,5 +1,6 @@
 health:
   delayedShutdownHandlerEnabled: false
+  initialOverallState: false
   healthChecks:
     - name: critical1
       critical: true
@@ -10,6 +11,7 @@ health:
         successAttempts: 1
     - name: critical2
       critical: true
+      initialState: false
       schedule:
         checkInterval: 10ms
         downtimeInterval: 10ms

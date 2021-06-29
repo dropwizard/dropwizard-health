@@ -26,6 +26,7 @@ public class HealthCheckManager implements HealthCheckRegistryListener, StateCha
         ShutdownNotifier {
     private static final Logger log = LoggerFactory.getLogger(HealthCheckManager.class);
     private static final Duration DEFAULT_SHUTDOWN_WAIT_PERIOD = Duration.seconds(15);
+    private static final boolean DEFAULT_INITIAL_OVERALL_STATE = true;
 
     private final AtomicBoolean isAppAlive = new AtomicBoolean(true);
     private final AtomicBoolean isAppHealthy = new AtomicBoolean(false);
@@ -37,6 +38,7 @@ public class HealthCheckManager implements HealthCheckRegistryListener, StateCha
     private final MetricRegistry metrics;
     private final String managerName;
     private final Duration shutdownWaitPeriod;
+    private final boolean initialOverallState;
     private final String aggregateHealthyName;
     private final String aggregateUnhealthyName;
     private volatile boolean shuttingDown = false;
@@ -45,14 +47,15 @@ public class HealthCheckManager implements HealthCheckRegistryListener, StateCha
     public HealthCheckManager(final List<HealthCheckConfiguration> configs,
                               final HealthCheckScheduler scheduler,
                               final MetricRegistry metrics) {
-        this(configs, scheduler, metrics, DEFAULT_SHUTDOWN_WAIT_PERIOD);
+        this(configs, scheduler, metrics, DEFAULT_SHUTDOWN_WAIT_PERIOD, DEFAULT_INITIAL_OVERALL_STATE);
     }
 
     public HealthCheckManager(final List<HealthCheckConfiguration> configs,
                               final HealthCheckScheduler scheduler,
                               final MetricRegistry metrics,
-                              final Duration shutdownWaitPeriod) {
-        this(configs, scheduler, metrics, null, shutdownWaitPeriod);
+                              final Duration shutdownWaitPeriod,
+                              final boolean initialOverallState) {
+        this(configs, scheduler, metrics, null, shutdownWaitPeriod, initialOverallState);
     }
 
     @Deprecated
@@ -60,15 +63,16 @@ public class HealthCheckManager implements HealthCheckRegistryListener, StateCha
                               final HealthCheckScheduler scheduler,
                               final MetricRegistry metrics,
                               final String managerName) {
-        this(configs, scheduler, metrics, managerName, DEFAULT_SHUTDOWN_WAIT_PERIOD);
+        this(configs, scheduler, metrics, managerName, DEFAULT_SHUTDOWN_WAIT_PERIOD, DEFAULT_INITIAL_OVERALL_STATE);
     }
 
     public HealthCheckManager(final List<HealthCheckConfiguration> configs,
                               final HealthCheckScheduler scheduler,
                               final MetricRegistry metrics,
                               final String managerName,
-                              final Duration shutdownWaitPeriod) {
-        this(configs, scheduler, metrics, managerName, shutdownWaitPeriod, new HashMap<>());
+                              final Duration shutdownWaitPeriod,
+                              final boolean initialOverallState) {
+        this(configs, scheduler, metrics, managerName, shutdownWaitPeriod, initialOverallState, new HashMap<>());
     }
 
     // Visible for testing
@@ -77,6 +81,7 @@ public class HealthCheckManager implements HealthCheckRegistryListener, StateCha
                        final MetricRegistry metrics,
                        final String managerName,
                        final Duration shutdownWaitPeriod,
+                       final boolean initialOverallState,
                        final Map<String, ScheduledHealthCheck> checks) {
         this.configs = configs.stream()
                 .collect(Collectors.toMap(HealthCheckConfiguration::getName, Function.identity()));
@@ -84,6 +89,7 @@ public class HealthCheckManager implements HealthCheckRegistryListener, StateCha
         this.metrics = Objects.requireNonNull(metrics);
         this.managerName = managerName;
         this.shutdownWaitPeriod = shutdownWaitPeriod;
+        this.initialOverallState = initialOverallState;
         this.checks = Objects.requireNonNull(checks);
 
         this.aggregateHealthyName = MetricRegistry.name("health", managerName, "aggregate", "healthy");
@@ -105,8 +111,9 @@ public class HealthCheckManager implements HealthCheckRegistryListener, StateCha
         final HealthCheckType type = config.getType();
         // type of 'alive' implies 'critical'
         final boolean critical = (type == HealthCheckType.ALIVE) || config.isCritical();
+        final boolean initialState = config.isInitialState();
 
-        final State state = new State(name, schedule.getFailureAttempts(), schedule.getSuccessAttempts(), this);
+        final State state = new State(name, schedule.getFailureAttempts(), schedule.getSuccessAttempts(), initialState, this);
         final Counter healthyCheckCounter = metrics.counter(MetricRegistry.name("health", managerName, name, "healthy"));
         final Counter unhealthyCheckCounter = metrics.counter(MetricRegistry.name("health", managerName, name, "unhealthy"));
 
@@ -114,7 +121,12 @@ public class HealthCheckManager implements HealthCheckRegistryListener, StateCha
                 healthyCheckCounter, unhealthyCheckCounter);
         checks.put(name, check);
 
-        scheduler.schedule(check, true);
+        // handle initial state of 'false' to ensure counts line up
+        if (!initialState && critical) {
+            handleCriticalHealthChange(name, type, false);
+        }
+
+        scheduler.scheduleInitial(check);
     }
 
     @Override
@@ -142,7 +154,7 @@ public class HealthCheckManager implements HealthCheckRegistryListener, StateCha
     }
 
     protected void initializeAppHealth() {
-        this.isAppHealthy.set(true);
+        this.isAppHealthy.set(initialOverallState);
     }
 
     private long calculateNumberOfHealthyChecks() {

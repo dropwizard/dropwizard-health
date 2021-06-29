@@ -20,6 +20,9 @@ public class HealthCheckConfiguration {
     @JsonProperty
     private boolean critical = false;
 
+    @JsonProperty
+    private boolean initialState = true;
+
     @Valid
     @NotNull
     @JsonProperty
@@ -47,6 +50,14 @@ public class HealthCheckConfiguration {
 
     public void setCritical(final boolean critical) {
         this.critical = critical;
+    }
+
+    public boolean isInitialState() {
+        return initialState;
+    }
+
+    public void setInitialState(boolean initialState) {
+        this.initialState = initialState;
     }
 
     public Schedule getSchedule() {

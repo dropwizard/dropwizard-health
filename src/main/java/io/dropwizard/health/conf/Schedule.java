@@ -10,6 +10,9 @@ import javax.validation.constraints.NotNull;
 
 public class Schedule {
 
+    @JsonProperty
+    private Duration initialDelay = null;
+
     @NotNull
     @JsonProperty
     private Duration checkInterval = Duration.seconds(5);
@@ -25,6 +28,15 @@ public class Schedule {
     @Min(0)
     @JsonProperty
     private int successAttempts = 2;
+
+    public Duration getInitialDelay() {
+        // default to checkInterval value
+        return initialDelay == null ? getCheckInterval() : initialDelay;
+    }
+
+    public void setInitialDelay(Duration initialDelay) {
+        this.initialDelay = initialDelay;
+    }
 
     public Duration getCheckInterval() {
         return checkInterval;
@@ -65,12 +77,13 @@ public class Schedule {
         final Schedule schedule = (Schedule) o;
         return failureAttempts == schedule.failureAttempts &&
                 successAttempts == schedule.successAttempts &&
+                Objects.equals(initialDelay, schedule.initialDelay) &&
                 Objects.equals(checkInterval, schedule.checkInterval) &&
                 Objects.equals(downtimeInterval, schedule.downtimeInterval);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(checkInterval, downtimeInterval, failureAttempts, successAttempts);
+        return Objects.hash(initialDelay, checkInterval, downtimeInterval, failureAttempts, successAttempts);
     }
 }

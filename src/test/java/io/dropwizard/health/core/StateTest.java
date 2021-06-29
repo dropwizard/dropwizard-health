@@ -22,7 +22,7 @@ public class StateTest {
 
     @Test
     public void singleFailureShouldNotChangeStateIfThresholdNotExceeded() {
-        final State state = new State(NAME, 2, 1,
+        final State state = new State(NAME, 2, 1, true,
                 (healthCheckName, newState) -> didStateChange.set(true));
         state.failure();
 
@@ -32,7 +32,7 @@ public class StateTest {
 
     @Test
     public void singleFailureShouldChangeStateIfThresholdExceeded() {
-        final State state = new State(NAME, 1, 1,
+        final State state = new State(NAME, 1, 1, true,
                 (healthCheckName, newState) -> didStateChange.set(true));
         assertThat(state.getHealthy().get()).isTrue();
 
@@ -44,11 +44,9 @@ public class StateTest {
 
     @Test
     public void singleSuccessShouldNotChangeStateIfThresholdNotExceeded() {
-        final State state = new State(NAME, 1, 2,
+        final State state = new State(NAME, 1, 2, false,
                 (healthCheckName, newState) -> didStateChange.set(true));
-        // fail to get initial state to unhealthy.
-        state.failure();
-        didStateChange.set(false);
+        assertThat(state.getHealthy().get()).isFalse();
 
         state.success();
 
@@ -58,11 +56,9 @@ public class StateTest {
 
     @Test
     public void singleSuccessShouldChangeStateIfThresholdExceeded() {
-        final State state = new State(NAME, 1, 1,
+        final State state = new State(NAME, 1, 1, false,
                 (healthCheckName, newState) -> didStateChange.set(true));
-        // fail to get initial state to unhealthy.
-        state.failure();
-        didStateChange.set(false);
+        assertThat(state.getHealthy().get()).isFalse();
 
         state.success();
 
@@ -72,7 +68,7 @@ public class StateTest {
 
     @Test
     public void failureFollowedByRecoveryShouldAllowAStateChangeToUnhealthyAfterAnotherFailureOccurs() {
-        final State state = new State(NAME, 1, 1,
+        final State state = new State(NAME, 1, 1, true,
                 (healthCheckName, newState) -> didStateChange.set(true));
 
         state.failure();
@@ -97,11 +93,9 @@ public class StateTest {
 
     @Test
     public void successFollowedByFailureShouldAllowAStateChangeToHealthyAfterAnotherSuccessOccurs() {
-        final State state = new State(NAME, 1, 1,
+        final State state = new State(NAME, 1, 1, false,
                 (healthCheckName, newState) -> didStateChange.set(true));
-
-        state.failure();
-        didStateChange.set(false);
+        assertThat(state.getHealthy().get()).isFalse();
 
         state.success();
 
@@ -126,7 +120,7 @@ public class StateTest {
     @Test
     public void dependencyFailingThenRecoveringTriggersStateChangeEventsCorrectly() {
         // given
-        final State state = new State(NAME, 3, 2, callback);
+        final State state = new State(NAME, 3, 2, true, callback);
 
         // when / then
         state.success(); // start success
