@@ -2,7 +2,7 @@ name: Release
 on:
   push:
     tags:
-    - dropwizard-health-*
+    - v*
 jobs:
   release:
     runs-on: 'ubuntu-latest'
