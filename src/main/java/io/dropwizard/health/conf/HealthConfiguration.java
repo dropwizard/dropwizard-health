@@ -21,6 +21,9 @@ public class HealthConfiguration {
     private List<HealthCheckConfiguration> healthChecks = Collections.emptyList();
 
     @JsonProperty
+    private boolean initialOverallState = true;
+
+    @JsonProperty
     private boolean delayedShutdownHandlerEnabled = true;
 
     @NotNull
@@ -42,6 +45,14 @@ public class HealthConfiguration {
 
     public void setHealthCheckConfigurations(final List<HealthCheckConfiguration> healthChecks) {
         this.healthChecks = healthChecks;
+    }
+
+    public boolean isInitialOverallState() {
+        return initialOverallState;
+    }
+
+    public void setInitialOverallState(boolean initialOverallState) {
+        this.initialOverallState = initialOverallState;
     }
 
     public boolean isDelayedShutdownHandlerEnabled() {

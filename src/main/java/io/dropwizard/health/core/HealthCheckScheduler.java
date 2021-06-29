@@ -1,5 +1,6 @@
 package io.dropwizard.health.core;
 
+import io.dropwizard.util.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,18 +20,33 @@ public class HealthCheckScheduler {
         this.executorService = executorService;
     }
 
+    void scheduleInitial(final ScheduledHealthCheck check) {
+        final Duration interval;
+        if (check.isHealthy()) {
+            interval = check.getSchedule().getCheckInterval();
+        } else {
+            interval = check.getSchedule().getDowntimeInterval();
+        }
+
+        schedule(check, check.getSchedule().getInitialDelay(), interval);
+    }
+
     public void schedule(final ScheduledHealthCheck check, final boolean healthy) {
         unschedule(check.getName());
 
-        final long intervalMs;
+        final Duration interval;
         if (healthy) {
-            intervalMs = check.getSchedule().getCheckInterval().toMilliseconds();
+            interval = check.getSchedule().getCheckInterval();
         } else {
-            intervalMs = check.getSchedule().getDowntimeInterval().toMilliseconds();
+            interval = check.getSchedule().getDowntimeInterval();
         }
 
-        final ScheduledFuture taskFuture =
-                executorService.scheduleWithFixedDelay(check, intervalMs, intervalMs, TimeUnit.MILLISECONDS);
+        schedule(check, interval, interval);
+    }
+
+    private void schedule(final ScheduledHealthCheck check, final Duration initialDelay, final Duration delay) {
+        final ScheduledFuture taskFuture = executorService.scheduleWithFixedDelay(check, initialDelay.toMilliseconds(),
+                delay.toMilliseconds(), TimeUnit.MILLISECONDS);
         futures.put(check.getName(), taskFuture);
         log.debug("Scheduled check: check={}", check);
     }

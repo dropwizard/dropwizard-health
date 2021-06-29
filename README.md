@@ -88,6 +88,7 @@ delayedShutdownHandlerEnabled | true | Flag indicating whether to delay shutdown
 shutdownWaitPeriod | 15 seconds | Amount of time to delay shutdown by to allow already processing requests to complete. Only applicable if `delayedShutdownHandlerEnabled` is true.
 healthCheckUrlPaths | \["/health-check"\] | URLs to expose the app's health check on.
 healthChecks | [] | A list of configured health checks. See the [Health Check Configuration section](#health-check-configuration) for more details.
+initialOverallState | true | Flag indicating whether the overall health state of the application should start as healthy or unhealthy. A value of `true` indicates an initial state of healthy while a value of `false` indicates an initial state of unhealthy.
 servlet | default health servlet | The health servlet that is used to generate health check responses. See the [Default Health Servlet section](#default-health-servlet) for more details.
 
 ### Health Check Configuration
@@ -96,6 +97,7 @@ Name | Default | Description
 name | (none) | The name of this health check. This must be unique.
 type | ready | The type of this health check. This is either `alive` or `ready`. See the [Application Status section](#application-status) for more details.
 critical | false | Flag indicating whether this dependency is critical to determine the health of the application. If `true` and this dependency is unhealthy, the application will also be marked as unhealthy.
+initialState | true | Flag indicating the initial state to use for this health check. A value of `true` indicates an initial state of healthy while a value of `false` indicates an initial state of unhealthy.
 schedule | (none) | The schedule that this health check will be run on. See the [Schedule section](#schedule) for more details.
 
 ### Schedule
@@ -103,6 +105,7 @@ Name | Default | Description
 ---- | ------- | -----------
 checkInterval | 5 seconds | The interval on which to perform a health check for this dependency while the dependency is in a healthy state.
 downtimeInterval | 30 seconds | The interval on which to perform a health check for this dependency while the dependency is in an unhealthy state.
+initialDelay | the value of `checkInterval` | The initial delay to use when first scheduling the health check.
 failureAttempts | 3 | The threshold of consecutive failed attempts needed to mark a dependency as unhealthy (from a healthy state).
 successAttempts | 2 | The threshold of consecutive successful attempts needed to mark a dependency as healthy (from an unhealthy state).
 

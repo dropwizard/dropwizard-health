@@ -58,7 +58,7 @@ public abstract class HealthCheckBundle<C extends Configuration> implements Conf
                 healthCheckConfigs.size(), metrics, environment.lifecycle());
         final HealthCheckScheduler scheduler = new HealthCheckScheduler(scheduledHealthCheckExecutor);
         final HealthCheckManager healthCheckManager = createHealthCheckManager(healthCheckConfigs, scheduler, metrics,
-                name, healthConfig.getShutdownWaitPeriod());
+                name, healthConfig.getShutdownWaitPeriod(), healthConfig.isInitialOverallState());
         healthCheckManager.initializeAppHealth();
 
         // setup servlet to respond to health check requests
@@ -120,7 +120,7 @@ public abstract class HealthCheckBundle<C extends Configuration> implements Conf
     }
 
     /**
-     * @deprecated use {@link #createHealthCheckManager(List, HealthCheckScheduler, MetricRegistry, String)} instead.
+     * @deprecated use {@link #createHealthCheckManager(List, HealthCheckScheduler, MetricRegistry, String, Duration, boolean)} instead.
      */
     @Deprecated
     protected HealthCheckManager createHealthCheckManager(final List<HealthCheckConfiguration> healthCheckConfigs,
@@ -130,7 +130,7 @@ public abstract class HealthCheckBundle<C extends Configuration> implements Conf
     }
 
     /**
-     * @deprecated use {@link #createHealthCheckManager(List, HealthCheckScheduler, MetricRegistry, String, Duration)} instead.
+     * @deprecated use {@link #createHealthCheckManager(List, HealthCheckScheduler, MetricRegistry, String, Duration, boolean)} instead.
      */
     @Deprecated
     protected HealthCheckManager createHealthCheckManager(final List<HealthCheckConfiguration> healthCheckConfigs,
@@ -144,8 +144,10 @@ public abstract class HealthCheckBundle<C extends Configuration> implements Conf
                                                           final HealthCheckScheduler scheduler,
                                                           final MetricRegistry metrics,
                                                           final String name,
-                                                          final Duration shutdownWaitPeriod) {
-        return new HealthCheckManager(healthCheckConfigs, scheduler, metrics, name, shutdownWaitPeriod);
+                                                          final Duration shutdownWaitPeriod,
+                                                          final boolean initialOverallState) {
+        return new HealthCheckManager(healthCheckConfigs, scheduler, metrics, name, shutdownWaitPeriod,
+                initialOverallState);
     }
 
     protected abstract HealthConfiguration getHealthConfiguration(C configuration);
