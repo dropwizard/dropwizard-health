@@ -33,6 +33,7 @@ public abstract class HealthCheckBundle<C extends Configuration> implements Conf
         this(null);
     }
 
+    @Deprecated
     protected HealthCheckBundle(String name) {
         this.name = name;
         if (name != null) {
@@ -140,6 +141,7 @@ public abstract class HealthCheckBundle<C extends Configuration> implements Conf
         return new HealthCheckManager(healthCheckConfigs, scheduler, metrics, name);
     }
 
+    @Deprecated
     protected HealthCheckManager createHealthCheckManager(final List<HealthCheckConfiguration> healthCheckConfigs,
                                                           final HealthCheckScheduler scheduler,
                                                           final MetricRegistry metrics,

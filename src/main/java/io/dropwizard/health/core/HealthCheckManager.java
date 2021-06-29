@@ -66,6 +66,7 @@ public class HealthCheckManager implements HealthCheckRegistryListener, StateCha
         this(configs, scheduler, metrics, managerName, DEFAULT_SHUTDOWN_WAIT_PERIOD, DEFAULT_INITIAL_OVERALL_STATE);
     }
 
+    @Deprecated
     public HealthCheckManager(final List<HealthCheckConfiguration> configs,
                               final HealthCheckScheduler scheduler,
                               final MetricRegistry metrics,
