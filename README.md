@@ -1,3 +1,5 @@
+> ## ℹ️ dropwizard-health has been promoted to a core module and is part of the Dropwizard main project since [Dropwizard 2.1.0](https://github.com/dropwizard/dropwizard/releases/tag/v2.1.0).
+
 # dropwizard-health
 [![Build](https://github.com/dropwizard/dropwizard-health/workflows/Build/badge.svg)](https://github.com/dropwizard/dropwizard-health/actions?query=workflow%3ABuild)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=dropwizard_dropwizard-health&metric=alert_status)](https://sonarcloud.io/dashboard?id=dropwizard_dropwizard-health)
